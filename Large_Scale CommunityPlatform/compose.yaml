@@ -1,0 +1,35 @@
+﻿services:
+  #Backend Server
+  backend:
+    image: community-platform-api
+    build:
+      context: 
+        dockerfile:"Large_Scale CommunityPlatform/Dockerfile"
+    ports:
+      - "8080:8080"
+    environment:
+      - ConnectionString_DefaultConnection=Server=mysql; Port=3306;Database=MyDb;Uid=root;Pwd=${DB_ROOT_PASSWORD};
+      - RedisOption__Configuration=redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+  #MySQL
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: MyDb
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+        
+  #Redis
+  redis:
+    image: redis:7-alphine
+    ports:
+      - "6379:6379"
+      

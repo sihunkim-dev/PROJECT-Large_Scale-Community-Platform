@@ -1,1 +1,9 @@
-"# PROJECT-Large_Scale-Community-Platform" 
+# Community Platfrom Backend
+
+## Functional Requirements
+
+## System Diagram
+
+## DB Schemas
+
+## API Endpoints

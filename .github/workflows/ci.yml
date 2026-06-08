@@ -1,0 +1,50 @@
+name: .NET CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
+          MYSQL_DATABASE: MyDb
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Restore dependencies
+        working-directory: "./Large_Scale CommunityPlatform"
+        run: dotnet restore
+
+      - name: Build
+        working-directory: "./Large_Scale CommunityPlatform"
+        run: dotnet build --no-restore
+
+      - name: Run Tests
+        working-directory: "./Large_Scale CommunityPlatform"
+        run: dotnet test --no-build --verbosity normal
+        env:
+          ConnectionStrings__DefaultConnection: "Server=127.0.0.1;Port=3306;Database=MyDb;Uid=root;Pwd=${{ secrets.DB_ROOT_PASSWORD }};"
+          RedisOption__Configuration: "127.0.0.1"

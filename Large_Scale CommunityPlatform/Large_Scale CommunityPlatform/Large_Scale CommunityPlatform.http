@@ -1,0 +1,6 @@
+@Large_Scale_CommunityPlatform_HostAddress = http://localhost:5152
+
+GET {{Large_Scale_CommunityPlatform_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
