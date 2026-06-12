@@ -217,6 +217,33 @@ namespace Large_Scale_CommunityPlatform.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "RefreshTokens",
+                columns: table => new
+                {
+                    TokenId = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    TokenHash = table.Column<string>(type: "varchar(256)", maxLength: 256, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    RevokedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    UserId = table.Column<string>(type: "varchar(255)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RefreshTokens", x => x.TokenId);
+                    table.ForeignKey(
+                        name: "FK_RefreshTokens_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Posts",
                 columns: table => new
                 {
@@ -262,15 +289,17 @@ namespace Large_Scale_CommunityPlatform.Migrations
                     PostId = table.Column<long>(type: "bigint", nullable: false),
                     UserId = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Path = table.Column<string>(type: "longtext", nullable: false)
+                    ParentCommentId = table.Column<long>(type: "bigint", nullable: true),
+                    Path = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Depth = table.Column<int>(type: "int", nullable: false),
-                    CommentText = table.Column<string>(type: "longtext", nullable: false)
+                    CommentText = table.Column<string>(type: "text", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     LikeCount = table.Column<long>(type: "bigint", nullable: false),
                     DislikeCount = table.Column<long>(type: "bigint", nullable: false),
-                    Created = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    Updated = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    IsHidden = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -281,6 +310,12 @@ namespace Large_Scale_CommunityPlatform.Migrations
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Comments_Comments_ParentCommentId",
+                        column: x => x.ParentCommentId,
+                        principalTable: "Comments",
+                        principalColumn: "CommentId",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Comments_Posts_PostId",
                         column: x => x.PostId,
@@ -296,11 +331,10 @@ namespace Large_Scale_CommunityPlatform.Migrations
                 {
                     PostReactionId = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    ReactionType = table.Column<int>(type: "int", nullable: false),
+                    PostId = table.Column<long>(type: "bigint", nullable: false),
                     UserId = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    PostId = table.Column<long>(type: "bigint", nullable: false),
-                    Type = table.Column<int>(type: "int", nullable: false),
+                    ReactionType = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
@@ -327,12 +361,11 @@ namespace Large_Scale_CommunityPlatform.Migrations
                 {
                     CommentReactionId = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    PostId = table.Column<long>(type: "bigint", nullable: false),
+                    CommentId = table.Column<long>(type: "bigint", nullable: false),
                     UserId = table.Column<string>(type: "varchar(255)", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Type = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    CommentId = table.Column<long>(type: "bigint", nullable: true)
+                    ReactionType = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -347,7 +380,8 @@ namespace Large_Scale_CommunityPlatform.Migrations
                         name: "FK_CommentReactions_Comments_CommentId",
                         column: x => x.CommentId,
                         principalTable: "Comments",
-                        principalColumn: "CommentId");
+                        principalColumn: "CommentId",
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -389,9 +423,10 @@ namespace Large_Scale_CommunityPlatform.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_CommentReactions_CommentId",
+                name: "IX_CommentReactions_CommentId_UserId",
                 table: "CommentReactions",
-                column: "CommentId");
+                columns: new[] { "CommentId", "UserId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_CommentReactions_UserId",
@@ -399,9 +434,14 @@ namespace Large_Scale_CommunityPlatform.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Comments_PostId",
+                name: "IX_Comments_ParentCommentId",
                 table: "Comments",
-                column: "PostId");
+                column: "ParentCommentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_PostId_Path",
+                table: "Comments",
+                columns: new[] { "PostId", "Path" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Comments_UserId",
@@ -409,9 +449,10 @@ namespace Large_Scale_CommunityPlatform.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PostReactions_PostId",
+                name: "IX_PostReactions_PostId_UserId",
                 table: "PostReactions",
-                column: "PostId");
+                columns: new[] { "PostId", "UserId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PostReactions_UserId",
@@ -426,6 +467,17 @@ namespace Large_Scale_CommunityPlatform.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Posts_UserId",
                 table: "Posts",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_TokenHash",
+                table: "RefreshTokens",
+                column: "TokenHash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_UserId",
+                table: "RefreshTokens",
                 column: "UserId");
         }
 
@@ -452,6 +504,9 @@ namespace Large_Scale_CommunityPlatform.Migrations
 
             migrationBuilder.DropTable(
                 name: "PostReactions");
+
+            migrationBuilder.DropTable(
+                name: "RefreshTokens");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

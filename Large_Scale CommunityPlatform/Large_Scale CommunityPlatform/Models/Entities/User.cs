@@ -15,5 +15,6 @@ public class User : IdentityUser
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<PostReaction> PostReactions { get; set; } = new List<PostReaction>();
     public ICollection<CommentReaction> CommentReactions { get; set; } = new List<CommentReaction>();
-    
+
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }
