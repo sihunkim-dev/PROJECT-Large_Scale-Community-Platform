@@ -18,7 +18,11 @@ jobs:
           MYSQL_DATABASE: MyDb
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -p${{ secrets.DB_ROOT_PASSWORD }}" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=5
 
       redis:
         image: redis:7-alpine
@@ -48,3 +52,4 @@ jobs:
         env:
           ConnectionStrings__DefaultConnection: "Server=127.0.0.1;Port=3306;Database=MyDb;Uid=root;Pwd=${{ secrets.DB_ROOT_PASSWORD }};"
           RedisOption__Configuration: "127.0.0.1"
+          JwtSettings__Secret: ${{ secrets.PROD_JWT_SECRET }}

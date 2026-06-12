@@ -28,10 +28,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Controllers\" />
       <Folder Include="Data\Repositories\" />
-      <Folder Include="Models\Dtos\" />
-      <Folder Include="Services\" />
+      <Folder Include="Models\Dtos\Post\" />
+      <Folder Include="UnitOfWorks\" />
     </ItemGroup>
 
 </Project>

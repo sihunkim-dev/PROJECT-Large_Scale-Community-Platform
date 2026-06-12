@@ -15,4 +15,93 @@ public class ApplicationDbContext : IdentityDbContext<User>
     public DbSet<PostReaction> PostReactions { get; set; }
     public DbSet<CommentReaction> CommentReactions { get; set; }
     public DbSet<Category> Categories { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+    
+    //Fluent API
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        builder.Entity<RefreshToken>()
+            .HasKey(rt => rt.TokenId);
+
+        builder.Entity<RefreshToken>()
+            .Property(t => t.TokenHash)
+            .IsRequired()
+            .HasMaxLength(256);
+        
+        builder.Entity<RefreshToken>()
+            .HasOne(rt => rt.User)
+            .WithMany(u => u.RefreshTokens)
+            .HasForeignKey(rt => rt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.Entity<RefreshToken>()
+            .HasIndex(rt => rt.TokenHash)
+            .IsUnique();
+        
+        // Comment - Post
+        builder.Entity<Comment>()
+            .HasOne(c => c.Post)
+            .WithMany(p => p.Comments)
+            .HasForeignKey(c => c.PostId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        
+
+        // Comment - User
+        builder.Entity<Comment>()
+            .HasOne(c => c.User)
+            .WithMany(u => u.Comments)
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        //Post Reaction (POSTReaction - Post)
+        builder.Entity<PostReaction>()
+            .HasOne(pr => pr.Post)
+            .WithMany(p => p.PostReactions)
+            .HasForeignKey(pr => pr.PostId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.Entity<Comment>()
+            .HasOne(c => c.ParentComment)
+            .WithMany(c => c.Replies)
+            .HasForeignKey(c => c.ParentCommentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Comment>()
+            .HasIndex(c => new { c.PostId, c.Path });
+
+        builder.Entity<Comment>()
+            .Property(c => c.CommentText)
+            .HasColumnType("text");
+        
+        //POSTReaction - USEr
+        builder.Entity<PostReaction>()
+            .HasOne(pr => pr.User)
+            .WithMany(u => u.PostReactions)
+            .HasForeignKey(pr => pr.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.Entity<PostReaction>()
+            .HasIndex(pr => new { pr.PostId, pr.UserId })
+            .IsUnique();
+        
+        builder.Entity<CommentReaction>()
+            .HasOne(cr => cr.Comment)
+            .WithMany(c => c.CommentReactions)
+            .HasForeignKey(cr => cr.CommentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<CommentReaction>()
+            .HasOne(cr => cr.User)
+            .WithMany(u => u.CommentReactions)
+            .HasForeignKey(cr => cr.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        
+        builder.Entity<CommentReaction>()
+            .HasIndex(cr => new { cr.CommentId, cr.UserId })
+            .IsUnique();
+    }
 }

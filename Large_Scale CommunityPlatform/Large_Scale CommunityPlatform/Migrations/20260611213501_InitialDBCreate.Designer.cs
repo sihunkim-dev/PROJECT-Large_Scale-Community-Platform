@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Large_Scale_CommunityPlatform.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260609221434_InitialDBCreate")]
+    [Migration("20260611213501_InitialDBCreate")]
     partial class InitialDBCreate
     {
         /// <inheritdoc />
@@ -52,9 +52,9 @@ namespace Large_Scale_CommunityPlatform.Migrations
 
                     b.Property<string>("CommentText")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("Created")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<int>("Depth")
@@ -63,17 +63,23 @@ namespace Large_Scale_CommunityPlatform.Migrations
                     b.Property<long>("DislikeCount")
                         .HasColumnType("bigint");
 
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<long>("LikeCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ParentCommentId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Path")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<long>("PostId")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTime>("Updated")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("UserId")
@@ -82,9 +88,11 @@ namespace Large_Scale_CommunityPlatform.Migrations
 
                     b.HasKey("CommentId");
 
-                    b.HasIndex("PostId");
+                    b.HasIndex("ParentCommentId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("PostId", "Path");
 
                     b.ToTable("Comments");
                 });
@@ -97,16 +105,13 @@ namespace Large_Scale_CommunityPlatform.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("CommentReactionId"));
 
-                    b.Property<long?>("CommentId")
+                    b.Property<long>("CommentId")
                         .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<long>("PostId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("Type")
+                    b.Property<int>("ReactionType")
                         .HasColumnType("int");
 
                     b.Property<string>("UserId")
@@ -115,9 +120,10 @@ namespace Large_Scale_CommunityPlatform.Migrations
 
                     b.HasKey("CommentReactionId");
 
-                    b.HasIndex("CommentId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("CommentId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("CommentReactions");
                 });
@@ -186,20 +192,57 @@ namespace Large_Scale_CommunityPlatform.Migrations
                     b.Property<int>("ReactionType")
                         .HasColumnType("int");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.HasKey("PostReactionId");
 
-                    b.HasIndex("PostId");
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PostId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("PostReactions");
+                });
+
+            modelBuilder.Entity("Large_Scale_CommunityPlatform.Models.Entities.RefreshToken", b =>
+                {
+                    b.Property<long>("TokenId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("TokenId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("TokenId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PostReactions");
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("Large_Scale_CommunityPlatform.Models.Entities.User", b =>
@@ -413,6 +456,11 @@ namespace Large_Scale_CommunityPlatform.Migrations
 
             modelBuilder.Entity("Large_Scale_CommunityPlatform.Models.Entities.Comment", b =>
                 {
+                    b.HasOne("Large_Scale_CommunityPlatform.Models.Entities.Comment", "ParentComment")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Large_Scale_CommunityPlatform.Models.Entities.Post", "Post")
                         .WithMany("Comments")
                         .HasForeignKey("PostId")
@@ -425,6 +473,8 @@ namespace Large_Scale_CommunityPlatform.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("ParentComment");
+
                     b.Navigation("Post");
 
                     b.Navigation("User");
@@ -434,7 +484,9 @@ namespace Large_Scale_CommunityPlatform.Migrations
                 {
                     b.HasOne("Large_Scale_CommunityPlatform.Models.Entities.Comment", "Comment")
                         .WithMany("CommentReactions")
-                        .HasForeignKey("CommentId");
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Large_Scale_CommunityPlatform.Models.Entities.User", "User")
                         .WithMany("CommentReactions")
@@ -481,6 +533,17 @@ namespace Large_Scale_CommunityPlatform.Migrations
                         .IsRequired();
 
                     b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Large_Scale_CommunityPlatform.Models.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("Large_Scale_CommunityPlatform.Models.Entities.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -544,6 +607,8 @@ namespace Large_Scale_CommunityPlatform.Migrations
             modelBuilder.Entity("Large_Scale_CommunityPlatform.Models.Entities.Comment", b =>
                 {
                     b.Navigation("CommentReactions");
+
+                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("Large_Scale_CommunityPlatform.Models.Entities.Post", b =>
@@ -562,6 +627,8 @@ namespace Large_Scale_CommunityPlatform.Migrations
                     b.Navigation("PostReactions");
 
                     b.Navigation("Posts");
+
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

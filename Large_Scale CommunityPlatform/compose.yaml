@@ -8,8 +8,12 @@
     ports:
       - "8080:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=Server=mysql; Port=3306;Database=MyDb;Uid=root;Pwd=${DB_ROOT_PASSWORD};
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=MyDb;Uid=root;Pwd=${DB_ROOT_PASSWORD};
       - JwtSettings__Secret=${PROD_JWT_SECRET}
+      - JwtSettings__Issuer=LargeScaleCommunityPlatform
+      - JwtSettings__Audience=LargeScaleCommunityPlatformClient
+      - JwtSettings__ExpiryMinutes=60
       - RedisOption__Configuration=redis
     depends_on:
       mysql:
