@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Large_Scale_CommunityPlatform.Configurations;
 using Large_Scale_CommunityPlatform.Services;
+using Large_Scale_CommunityPlatform.Services.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -24,6 +25,7 @@ public static class JwtAuthenticationExtension
             throw new InvalidOperationException("Jwt Settings: Secret is missing");
         }
 
+        services.AddScoped<AuthService>();
         services.AddScoped<JwtTokenProvider>();
         services.AddScoped<JwtRefreshTokenProvider>();
 

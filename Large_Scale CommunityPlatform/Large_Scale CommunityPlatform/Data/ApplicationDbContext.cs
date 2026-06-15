@@ -48,7 +48,27 @@ public class ApplicationDbContext : IdentityDbContext<User>
             .OnDelete(DeleteBehavior.Cascade);
         
         
+        builder.Entity<Category>()
+            .HasOne(c => c.RequestedBy)
+            .WithMany()
+            .HasForeignKey(c => c.RequestedById)
+            .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Entity<Category>()
+            .HasOne(c => c.ApprovedBy)
+            .WithMany()
+            .HasForeignKey(c => c.ApprovedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Category>()
+            .HasIndex(c => c.CategoryName)
+            .IsUnique();
+
+        builder.Entity<Category>()
+            .Property(c => c.CategoryName)
+            .IsRequired()
+            .HasMaxLength(100);
+        
         // Comment - User
         builder.Entity<Comment>()
             .HasOne(c => c.User)
@@ -76,6 +96,40 @@ public class ApplicationDbContext : IdentityDbContext<User>
             .Property(c => c.CommentText)
             .HasColumnType("text");
         
+        // Post - Category
+        builder.Entity<Post>()
+            .HasOne(p => p.Category)
+            .WithMany(c => c.Posts)
+            .HasForeignKey(p => p.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+// Post - User
+        builder.Entity<Post>()
+            .HasOne(p => p.User)
+            .WithMany(u => u.Posts)
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Post>()
+            .Property(p => p.PostTitle)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        builder.Entity<Post>()
+            .Property(p => p.Content)
+            .IsRequired()
+            .HasColumnType("text");
+
+        builder.Entity<Post>()
+            .HasIndex(p => p.CategoryId);
+
+        builder.Entity<Post>()
+            .HasIndex(p => p.UserId);
+
+        builder.Entity<Post>()
+            .HasIndex(p => p.CreatedAt);
+        
+        
         //POSTReaction - USEr
         builder.Entity<PostReaction>()
             .HasOne(pr => pr.User)
@@ -86,6 +140,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
         builder.Entity<PostReaction>()
             .HasIndex(pr => new { pr.PostId, pr.UserId })
             .IsUnique();
+        
         
         builder.Entity<CommentReaction>()
             .HasOne(cr => cr.Comment)

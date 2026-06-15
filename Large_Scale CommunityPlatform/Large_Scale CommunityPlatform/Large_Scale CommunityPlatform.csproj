@@ -27,10 +27,4 @@
       </Content>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Data\Repositories\" />
-      <Folder Include="Models\Dtos\Post\" />
-      <Folder Include="UnitOfWorks\" />
-    </ItemGroup>
-
 </Project>

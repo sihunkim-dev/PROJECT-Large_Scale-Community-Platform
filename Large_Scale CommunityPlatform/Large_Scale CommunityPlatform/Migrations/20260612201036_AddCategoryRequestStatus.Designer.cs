@@ -4,6 +4,7 @@ using Large_Scale_CommunityPlatform.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Large_Scale_CommunityPlatform.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260612201036_AddCategoryRequestStatus")]
+    partial class AddCategoryRequestStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -165,7 +168,7 @@ namespace Large_Scale_CommunityPlatform.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
@@ -173,16 +176,12 @@ namespace Large_Scale_CommunityPlatform.Migrations
                     b.Property<long>("DislikesCount")
                         .HasColumnType("bigint");
 
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("tinyint(1)");
-
                     b.Property<long>("LikesCount")
                         .HasColumnType("bigint");
 
                     b.Property<string>("PostTitle")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -197,8 +196,6 @@ namespace Large_Scale_CommunityPlatform.Migrations
                     b.HasKey("PostId");
 
                     b.HasIndex("CategoryId");
-
-                    b.HasIndex("CreatedAt");
 
                     b.HasIndex("UserId");
 
@@ -552,7 +549,7 @@ namespace Large_Scale_CommunityPlatform.Migrations
                     b.HasOne("Large_Scale_CommunityPlatform.Models.Entities.Category", "Category")
                         .WithMany("Posts")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Large_Scale_CommunityPlatform.Models.Entities.User", "User")
