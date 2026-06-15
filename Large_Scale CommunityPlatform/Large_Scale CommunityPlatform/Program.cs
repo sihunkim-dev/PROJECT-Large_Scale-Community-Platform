@@ -1,10 +1,14 @@
+using Large_Scale_CommunityPlatform.Configurations;
 using Large_Scale_CommunityPlatform.Data;
 using Large_Scale_CommunityPlatform.Extensions;
 using Large_Scale_CommunityPlatform.Models.Entities;
+using Large_Scale_CommunityPlatform.Services.Reactions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +30,23 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 
 builder.Services.AddControllers();
 
+builder.Services.Configure<RedisOption>(builder.Configuration.GetSection("RedisOption"));
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var redisOption = sp.GetRequiredService<IOptions<RedisOption>>().Value;
+
+    if (string.IsNullOrWhiteSpace(redisOption.Configuration))
+    {
+        throw new InvalidOperationException("RedisOption:Configuration is missing");
+    }
+
+    return ConnectionMultiplexer.Connect(redisOption.Configuration);
+});
+
+builder.Services.AddScoped<ReactionCacheService>();
+builder.Services.AddScoped<PostReactionService>();
+builder.Services.AddScoped<CommentReactionService>();
 
 
 // Add services to the container.
@@ -61,6 +82,8 @@ builder.Services.AddOpenApi(options =>
         return Task.CompletedTask;
     });
 });
+
+
 
 
 

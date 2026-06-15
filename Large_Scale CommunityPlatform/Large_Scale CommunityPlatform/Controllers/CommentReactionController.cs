@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Large_Scale_CommunityPlatform.Data;
 using Large_Scale_CommunityPlatform.Models.Entities;
+using Large_Scale_CommunityPlatform.Services.Reactions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,176 +12,83 @@ namespace Large_Scale_CommunityPlatform.Controllers;
 [Route("api/comments/{commentId:long}/reactions")]
 public class CommentReactionController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly CommentReactionService _commentReactionService;
 
-    public CommentReactionController(ApplicationDbContext context)
+    public CommentReactionController(CommentReactionService commentReactionService)
     {
-        _context = context;
+        _commentReactionService = commentReactionService;
     }
-
+    
     [Authorize]
     [HttpPost("like")]
     public async Task<IActionResult> LikeComment(long commentId)
     {
-        return await ReactToComment(commentId, ReactionType.Like);
+        return await React(commentId, ReactionType.Like);
     }
 
     [Authorize]
     [HttpPost("dislike")]
     public async Task<IActionResult> DislikeComment(long commentId)
     {
-        return await ReactToComment(commentId, ReactionType.Dislike);
+        return await React(commentId, ReactionType.Dislike);
     }
 
     [Authorize]
     [HttpDelete]
     public async Task<IActionResult> RemoveCommentReaction(long commentId)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = GetUserId();
 
         if (userId == null)
         {
             return Unauthorized();
         }
 
-        var comment = await _context.Comments
-            .FirstOrDefaultAsync(c => c.CommentId == commentId);
+        var result = await _commentReactionService.RemoveAsync(commentId, userId);
 
-        if (comment == null || comment.IsHidden)
+        if (!result.IsSuccess)
         {
-            return NotFound(new { message = "Comment not found" });
+            return BadRequest(new { message = result.Message });
         }
 
-        var reaction = await _context.CommentReactions
-            .FirstOrDefaultAsync(r => r.CommentId == commentId && r.UserId == userId);
-
-        if (reaction == null)
-        {
-            return BadRequest(new { message = "Reaction does not exist" });
-        }
-
-        if (reaction.ReactionType == ReactionType.Like)
-        {
-            comment.LikeCount = Math.Max(0, comment.LikeCount - 1);
-        }
-        else
-        {
-            comment.DislikeCount = Math.Max(0, comment.DislikeCount - 1);
-        }
-
-        _context.CommentReactions.Remove(reaction);
-        comment.UpdatedAt = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            message = "Comment reaction removed successfully",
-            likeCount = comment.LikeCount,
-            dislikeCount = comment.DislikeCount
-        });
+        return Ok(result);
     }
 
     [AllowAnonymous]
     [HttpGet("summary")]
     public async Task<IActionResult> GetCommentReactionSummary(long commentId)
     {
-        var comment = await _context.Comments
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.CommentId == commentId);
+        var summary = await _commentReactionService.GetSummaryAsync(commentId);
 
-        if (comment == null || comment.IsHidden)
+        if (summary == null)
         {
             return NotFound(new { message = "Comment not found" });
         }
 
-        return Ok(new
-        {
-            commentId = comment.CommentId,
-            likeCount = comment.LikeCount,
-            dislikeCount = comment.DislikeCount
-        });
+        return Ok(summary);
     }
 
-    private async Task<IActionResult> ReactToComment(long commentId, ReactionType reactionType)
+    private async Task<IActionResult> React(long commentId, ReactionType reactionType)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = GetUserId();
 
         if (userId == null)
         {
             return Unauthorized();
         }
 
-        var comment = await _context.Comments
-            .FirstOrDefaultAsync(c => c.CommentId == commentId);
+        var result = await _commentReactionService.ReactAsync(commentId, userId, reactionType);
 
-        if (comment == null || comment.IsHidden)
+        if (!result.IsSuccess)
         {
-            return NotFound(new { message = "Comment not found" });
+            return NotFound(new { message = result.Message });
         }
 
-        var existingReaction = await _context.CommentReactions
-            .FirstOrDefaultAsync(r => r.CommentId == commentId && r.UserId == userId);
+        return Ok(result);
+    }
 
-        if (existingReaction == null)
-        {
-            var reaction = new CommentReaction
-            {
-                CommentId = commentId,
-                UserId = userId,
-                ReactionType = reactionType,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.CommentReactions.Add(reaction);
-
-            if (reactionType == ReactionType.Like)
-            {
-                comment.LikeCount += 1;
-            }
-            else
-            {
-                comment.DislikeCount += 1;
-            }
-        }
-        else if (existingReaction.ReactionType == reactionType)
-        {
-            if (reactionType == ReactionType.Like)
-            {
-                comment.LikeCount = Math.Max(0, comment.LikeCount - 1);
-            }
-            else
-            {
-                comment.DislikeCount = Math.Max(0, comment.DislikeCount - 1);
-            }
-
-            _context.CommentReactions.Remove(existingReaction);
-        }
-        else
-        {
-            if (existingReaction.ReactionType == ReactionType.Like)
-            {
-                comment.LikeCount = Math.Max(0, comment.LikeCount - 1);
-                comment.DislikeCount += 1;
-            }
-            else
-            {
-                comment.DislikeCount = Math.Max(0, comment.DislikeCount - 1);
-                comment.LikeCount += 1;
-            }
-
-            existingReaction.ReactionType = reactionType;
-        }
-
-        comment.UpdatedAt = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            message = "Comment reaction updated successfully",
-            likeCount = comment.LikeCount,
-            dislikeCount = comment.DislikeCount
-        });
+    private string? GetUserId()
+    {
+        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
 }
