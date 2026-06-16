@@ -58,19 +58,9 @@
 
 ## DB Schemas
 
+![Overall DB Schemas](images/mydb.png)
 
-
-### Planned Domain Tables
-
-* `Posts`
-* `Comments`
-* `PostReactions`
-* `CommentReactions`
-
-
-
-> Some domain tables are part of the planned full community structure and will be implemented incrementally.
-
+>**TOOL** : `DBeaver`
 ---
 
 ## API Endpoints
